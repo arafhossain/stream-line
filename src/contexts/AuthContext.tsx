@@ -40,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
     });
-    console.log("UNSUB: ", unsubscribe);
     return unsubscribe;
   }, []);
 

@@ -6,8 +6,8 @@ import {
 } from "react-router-dom";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
-import Chat from "./pages/Chat";
 import { useAuth } from "./contexts/AuthContext";
+import ChatLayout from "./pages/ChatLayout";
 
 function App() {
   const { currentUser, logout } = useAuth();
@@ -36,7 +36,7 @@ function App() {
         {/* Private Route: only accessible if logged in */}
         <Route
           path="/chat"
-          element={currentUser ? <Chat /> : <Navigate to="/login" />}
+          element={currentUser ? <ChatLayout /> : <Navigate to="/login" />}
         />
       </Routes>
     </Router>
