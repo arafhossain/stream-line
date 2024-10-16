@@ -3,12 +3,16 @@ import "./Chat.css";
 import { IMessageData } from "../models/IMessageData";
 
 export default function Chat() {
-  const [username, setUsername] = useState(""); // Username state
-  const [hasEnteredChat, setHasEnteredChat] = useState(false); // Tracks if user has entered the chat
+  const [username, setUsername] = useState("");
+  const [hasEnteredChat, setHasEnteredChat] = useState(false);
 
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<IMessageData[]>([]);
+
+  const [typingUser, setTypingUser] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTyping = useRef(false);
   const messageEndRef = useRef<HTMLDivElement | null>(null); // Ref to track the last message
 
   // Scroll to the latest message whenever the messages array changes
@@ -28,21 +32,27 @@ export default function Chat() {
       };
 
       socketRef.current.onmessage = (event) => {
-        const newMessage: IMessageData = JSON.parse(event.data);
+        const messageData: IMessageData = JSON.parse(event.data);
 
-        const localTime = new Date(newMessage.timestamp).toLocaleString(
-          "en-US",
-          {
-            hour: "numeric",
-            minute: "numeric",
-            hour12: true,
-          }
-        );
+        if (messageData.type === "typing") {
+          setTypingUser(messageData.user);
+        } else if (messageData.type === "stop_typing") {
+          setTypingUser(null);
+        } else if (messageData.type === "message" && messageData.timestamp) {
+          const localTime = new Date(messageData.timestamp).toLocaleString(
+            "en-US",
+            {
+              hour: "numeric",
+              minute: "numeric",
+              hour12: true,
+            }
+          );
 
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { ...newMessage, timestamp: localTime },
-        ]);
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { ...messageData, timestamp: localTime },
+          ]);
+        }
       };
 
       // Clean up the WebSocket connection when the component unmounts
@@ -63,9 +73,39 @@ export default function Chat() {
         text: message,
         timestamp: new Date().toISOString(),
       };
-      socketRef.current.send(JSON.stringify(messageData));
+      socketRef.current.send(
+        JSON.stringify({ type: "message", ...messageData })
+      ); // Send message data to server
       setMessage("");
+
+      // Stop typing indicator when the message is sent
+      socketRef.current.send(
+        JSON.stringify({ type: "stop_typing", user: username })
+      );
+      isTyping.current = false;
     }
+  };
+
+  const handleTyping = () => {
+    if (!isTyping.current && socketRef.current) {
+      socketRef.current.send(
+        JSON.stringify({ type: "typing", user: username })
+      );
+      isTyping.current = true;
+    }
+
+    // Reset the typing timeout if the user keeps typing
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Stop typing after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      socketRef.current?.send(
+        JSON.stringify({ type: "stop_typing", user: username })
+      );
+      isTyping.current = false;
+    }, 2000);
   };
 
   if (!hasEnteredChat) {
@@ -89,6 +129,7 @@ export default function Chat() {
   } else
     return (
       <div className="chat-content">
+        {typingUser && <div>{typingUser} is typing...</div>}
         <div className="message-list">
           {messages.map((msg, index) => (
             <div
@@ -114,6 +155,7 @@ export default function Chat() {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type your message..."
             onKeyUp={(e) => {
+              handleTyping();
               if (e.key === "Enter") handleSendMessage();
             }}
           />{" "}
