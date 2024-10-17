@@ -13,12 +13,27 @@ export default function Chat() {
   const socketRef = useRef<WebSocket | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTyping = useRef(false);
-  const messageEndRef = useRef<HTMLDivElement | null>(null); // Ref to track the last message
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   // Scroll to the latest message whenever the messages array changes
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const newVisibility = !document.hidden;
+      setIsPageVisible(newVisibility);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     // Prevent multiple WebSocket connections
@@ -52,6 +67,10 @@ export default function Chat() {
             ...prevMessages,
             { ...messageData, timestamp: localTime },
           ]);
+
+          if (!isPageVisible) {
+            setUnreadMessages((prev) => prev + 1);
+          }
         }
       };
 
@@ -64,6 +83,21 @@ export default function Chat() {
       };
     }
   }, [hasEnteredChat]);
+
+  useEffect(() => {
+    if (!isPageVisible && unreadMessages > 0) {
+      document.title = `(${unreadMessages}) New Messages - StreamLine`;
+    } else {
+      document.title = "StreamLine";
+    }
+  }, [unreadMessages, isPageVisible]);
+
+  useEffect(() => {
+    if (isPageVisible) {
+      setUnreadMessages(0);
+      document.title = "StreamLine";
+    }
+  }, [isPageVisible]);
 
   // Function to handle sending the message
   const handleSendMessage = () => {
@@ -129,7 +163,6 @@ export default function Chat() {
   } else
     return (
       <div className="chat-content">
-        {typingUser && <div>{typingUser} is typing...</div>}
         <div className="message-list">
           {messages.map((msg, index) => (
             <div
@@ -145,6 +178,12 @@ export default function Chat() {
               <small>{msg.timestamp}</small>
             </div>
           ))}
+          {/* Typing Indicator Inline with Messages */}
+          {typingUser && (
+            <div className="typing-indicator">
+              <em>{typingUser} is typing...</em>
+            </div>
+          )}
           <div ref={messageEndRef} />
         </div>
 

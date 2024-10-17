@@ -97,3 +97,10 @@ button:hover {
     #523280
   ); /* Reverse gradient on hover */
 }
+
+.typing-indicator {
+  font-size: 0.9em;
+  color: #888;
+  padding: 5px;
+  text-align: left;
+}
