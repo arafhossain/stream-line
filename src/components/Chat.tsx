@@ -3,19 +3,27 @@ import "./Chat.css";
 import { IMessageData } from "../models/IMessageData";
 
 export default function Chat() {
+  // User State
   const [username, setUsername] = useState("");
   const [hasEnteredChat, setHasEnteredChat] = useState(false);
 
+  // Message State
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<IMessageData[]>([]);
 
+  // Typing-related State
   const [typingUser, setTypingUser] = useState<string | null>(null);
-  const socketRef = useRef<WebSocket | null>(null);
+  const isTyping = useRef(false); // Mutable ref for typing status
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isTyping = useRef(false);
+
+  // WebSocket and DOM Refs
+  const socketRef = useRef<WebSocket | null>(null);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Page Visibility and Unread Messages
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const isPageVisibleRef = useRef(isPageVisible);
 
   // Scroll to the latest message whenever the messages array changes
   useEffect(() => {
@@ -25,7 +33,7 @@ export default function Chat() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       const newVisibility = !document.hidden;
-      setIsPageVisible(newVisibility);
+      setIsPageVisible(newVisibility); // Update state
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -34,6 +42,10 @@ export default function Chat() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
+
+  useEffect(() => {
+    isPageVisibleRef.current = isPageVisible; // Keep the ref up to date with the latest state
+  }, [isPageVisible]);
 
   useEffect(() => {
     // Prevent multiple WebSocket connections
@@ -68,7 +80,8 @@ export default function Chat() {
             { ...messageData, timestamp: localTime },
           ]);
 
-          if (!isPageVisible) {
+          // Use the ref to check the latest page visibility state
+          if (!isPageVisibleRef.current) {
             setUnreadMessages((prev) => prev + 1);
           }
         }
