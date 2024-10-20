@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import "./Chat.css";
 import { IMessageData } from "../models/IMessageData";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "../services/firebase";
+import { saveMessageToFirestore } from "../services/messageService";
 
 export default function Chat() {
   // User State
@@ -112,17 +115,45 @@ export default function Chat() {
     }
   }, [isPageVisible]);
 
+  useEffect(() => {
+    const loadMessages = async () => {
+      const historicalMessages = await loadHistoricalMessages();
+      // setMessages(historicalMessages);
+    };
+
+    loadMessages();
+  }, []);
+
+  const loadHistoricalMessages = async () => {
+    const messagesRef = collection(db, "messages");
+    const q = query(messagesRef, orderBy("timestamp", "asc"), limit(50)); // Last 50 messages
+
+    const querySnapshot = await getDocs(q);
+    console.log("His messages: ", querySnapshot.docs);
+
+    const messages = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    console.log(messages);
+
+    return messages;
+  };
+
   // Function to handle sending the message
   const handleSendMessage = () => {
     if (socketRef.current && message.trim() !== "") {
-      const messageData = {
+      const messageData: IMessageData = {
         user: username,
         text: message,
         timestamp: new Date().toISOString(),
+        type: "message",
       };
-      socketRef.current.send(
-        JSON.stringify({ type: "message", ...messageData })
-      ); // Send message data to server
+      socketRef.current.send(JSON.stringify({ ...messageData })); // Send message data to server
+
+      saveMessageToFirestore(messageData);
+
       setMessage("");
 
       // Stop typing indicator when the message is sent
@@ -191,7 +222,6 @@ export default function Chat() {
               <small>{msg.timestamp}</small>
             </div>
           ))}
-          {/* Typing Indicator Inline with Messages */}
           {typingUser && (
             <div className="typing-indicator">
               <em>{typingUser} is typing...</em>
