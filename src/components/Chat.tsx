@@ -28,6 +28,10 @@ export default function Chat() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const isPageVisibleRef = useRef(isPageVisible);
 
+  // Loading state
+  const [isConnecting, setIsConnecting] = useState(true);
+  const [hasConnectionError, setHasConnectionError] = useState(false);
+
   // Scroll to the latest message whenever the messages array changes
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,51 +58,61 @@ export default function Chat() {
     // Prevent multiple WebSocket connections
     if (socketRef.current) return;
 
-    if (hasEnteredChat) {
-      socketRef.current = new WebSocket("ws://localhost:8080");
+    socketRef.current = new WebSocket("ws://localhost:8080");
 
-      socketRef.current.onopen = () => {
-        console.log("WebSocket connection established");
-      };
+    socketRef.current.onopen = () => {
+      console.log("WebSocket connection established");
+      setIsConnecting(false);
+      setHasConnectionError(false);
+    };
 
-      socketRef.current.onmessage = (event) => {
-        const messageData: IMessageData = JSON.parse(event.data);
+    socketRef.current.onmessage = (event) => {
+      const messageData: IMessageData = JSON.parse(event.data);
 
-        if (messageData.type === "typing") {
-          setTypingUser(messageData.user);
-        } else if (messageData.type === "stop_typing") {
-          setTypingUser(null);
-        } else if (messageData.type === "message" && messageData.timestamp) {
-          const localTime = new Date(messageData.timestamp).toLocaleString(
-            "en-US",
-            {
-              hour: "numeric",
-              minute: "numeric",
-              hour12: true,
-            }
-          );
-
-          setMessages((prevMessages) => [
-            ...prevMessages,
-            { ...messageData, timestamp: localTime },
-          ]);
-
-          // Use the ref to check the latest page visibility state
-          if (!isPageVisibleRef.current) {
-            setUnreadMessages((prev) => prev + 1);
+      if (messageData.type === "typing") {
+        setTypingUser(messageData.user);
+      } else if (messageData.type === "stop_typing") {
+        setTypingUser(null);
+      } else if (messageData.type === "message" && messageData.timestamp) {
+        const localTime = new Date(messageData.timestamp).toLocaleString(
+          "en-US",
+          {
+            hour: "numeric",
+            minute: "numeric",
+            hour12: true,
           }
-        }
-      };
+        );
 
-      // Clean up the WebSocket connection when the component unmounts
-      return () => {
-        if (socketRef.current) {
-          socketRef.current?.close();
-          socketRef.current = null;
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { ...messageData, timestamp: localTime },
+        ]);
+
+        // Use the ref to check the latest page visibility state
+        if (!isPageVisibleRef.current) {
+          setUnreadMessages((prev) => prev + 1);
         }
-      };
-    }
-  }, [hasEnteredChat]);
+      }
+    };
+
+    socketRef.current.onclose = () => {
+      console.log("WebSocket connection closed");
+      setIsConnecting(false);
+    };
+
+    socketRef.current.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setHasConnectionError(true);
+    };
+
+    // Clean up WebSocket connection on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current?.close();
+        socketRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isPageVisible && unreadMessages > 0) {
@@ -185,6 +199,24 @@ export default function Chat() {
       isTyping.current = false;
     }, 2000);
   };
+
+  if (isConnecting) {
+    return (
+      <div className="connecting-container">
+        <div className="spinner"></div>
+        <p>Connecting to the server...</p>
+      </div>
+    );
+  }
+  console.log(hasConnectionError);
+  // If the server connection failed, show a "Server Disconnected" message
+  if (hasConnectionError) {
+    return (
+      <div className="server-status">
+        <p>Can't reach server. Please reload the page.</p>
+      </div>
+    );
+  }
 
   if (!hasEnteredChat) {
     return (
