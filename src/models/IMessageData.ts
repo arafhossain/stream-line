@@ -1,6 +1,8 @@
 export interface IMessageData {
-  user: string;
+  username: string;
   type: "stop_typing" | "message" | "typing";
+  email?: string;
   text?: string;
   timestamp?: string;
+  roomId?: string;
 }

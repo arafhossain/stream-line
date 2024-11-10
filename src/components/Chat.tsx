@@ -1,14 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 import "./Chat.css";
 import { IMessageData } from "../models/IMessageData";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+  where,
+  Timestamp,
+} from "firebase/firestore";
 import { db } from "../services/firebase";
 import { saveMessageToFirestore } from "../services/messageService";
+import { useAuth } from "../contexts/AuthContext";
+import { IRoomData } from "../models/IRoomData";
+import { v4 as uuidv4 } from "uuid";
+import { getRoom, makeRoom } from "../services/roomService";
+
+const GENERAL_ROOM_ID = "630c57bc-48ac-4873-ac43-d87715b8813a";
 
 export default function Chat() {
-  // User State
-  const [username, setUsername] = useState("");
-  const [hasEnteredChat, setHasEnteredChat] = useState(false);
+  const { currentUser } = useAuth();
+
+  // Room State
+  const [roomData, setRoomData] = useState<IRoomData | null>(null);
 
   // Message State
   const [message, setMessage] = useState("");
@@ -66,34 +81,7 @@ export default function Chat() {
       setHasConnectionError(false);
     };
 
-    socketRef.current.onmessage = (event) => {
-      const messageData: IMessageData = JSON.parse(event.data);
-
-      if (messageData.type === "typing") {
-        setTypingUser(messageData.user);
-      } else if (messageData.type === "stop_typing") {
-        setTypingUser(null);
-      } else if (messageData.type === "message" && messageData.timestamp) {
-        const localTime = new Date(messageData.timestamp).toLocaleString(
-          "en-US",
-          {
-            hour: "numeric",
-            minute: "numeric",
-            hour12: true,
-          }
-        );
-
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { ...messageData, timestamp: localTime },
-        ]);
-
-        // Use the ref to check the latest page visibility state
-        if (!isPageVisibleRef.current) {
-          setUnreadMessages((prev) => prev + 1);
-        }
-      }
-    };
+    socketRef.current.onmessage = handleSocketMessage;
 
     socketRef.current.onclose = () => {
       console.log("WebSocket connection closed");
@@ -130,59 +118,129 @@ export default function Chat() {
   }, [isPageVisible]);
 
   useEffect(() => {
-    const loadMessages = async () => {
-      const historicalMessages = await loadHistoricalMessages();
-      // setMessages(historicalMessages);
+    const initializeRoom = async () => {
+      const ROOM_DATA = await getRoom(GENERAL_ROOM_ID);
+
+      if (ROOM_DATA !== null) {
+        setRoomData(ROOM_DATA);
+      } else {
+        await makeRoom([], "group", "General");
+      }
     };
 
-    loadMessages();
+    initializeRoom();
   }, []);
 
-  const loadHistoricalMessages = async () => {
-    const messagesRef = collection(db, "messages");
-    const q = query(messagesRef, orderBy("timestamp", "asc"), limit(50)); // Last 50 messages
+  useEffect(() => {
+    if (!roomData) return;
 
-    const querySnapshot = await getDocs(q);
-    console.log("His messages: ", querySnapshot.docs);
+    const ROOM_ID = roomData?.roomId ? roomData.roomId : null;
 
-    const messages = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    if (ROOM_ID) {
+      const loadMessages = async () => {
+        const historicalMessages = await loadHistoricalMessages(ROOM_ID);
 
-    console.log(messages);
+        setMessages(historicalMessages);
+      };
+      loadMessages();
+    }
+  }, [roomData]);
 
-    return messages;
+  const loadHistoricalMessages = async (
+    roomId: string
+  ): Promise<IMessageData[]> => {
+    try {
+      const messagesRef = collection(db, "messages");
+      const q = query(
+        messagesRef,
+        orderBy("timestamp", "asc"),
+        limit(50),
+        where("roomId", "==", roomId)
+      ); // Last 50 messages
+
+      const querySnapshot = await getDocs(q);
+
+      const messages = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          username: data.username as string,
+          text: data.text as string,
+          timestamp: convertToLocalTime(
+            (data.timestamp as Timestamp).toDate().toISOString()
+          ),
+          roomId: data.roomId as string,
+          type: data.type as string,
+          email: data.email as string,
+        } as IMessageData;
+      });
+
+      return messages;
+    } catch (err) {
+      console.error("Error: ", err);
+      return [];
+    }
+  };
+
+  const handleSocketMessage = (event: MessageEvent) => {
+    const messageData: IMessageData = JSON.parse(event.data);
+
+    if (messageData.type === "typing") {
+      setTypingUser(messageData.username);
+    } else if (messageData.type === "stop_typing") {
+      setTypingUser(null);
+    } else if (messageData.type === "message" && messageData.timestamp) {
+      const localTime = convertToLocalTime(messageData.timestamp);
+
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { ...messageData, timestamp: localTime },
+      ]);
+
+      // Use the ref to check the latest page visibility state
+      if (!isPageVisibleRef.current) {
+        setUnreadMessages((prev) => prev + 1);
+      }
+    }
   };
 
   // Function to handle sending the message
   const handleSendMessage = () => {
     if (socketRef.current && message.trim() !== "") {
-      const messageData: IMessageData = {
-        user: username,
+      const NEW_MESSAGE: IMessageData = {
+        username: currentUser?.userName ?? "",
         text: message,
         timestamp: new Date().toISOString(),
         type: "message",
+        roomId: roomData?.roomId ?? "ERROR",
+        email: currentUser?.email ?? "",
       };
-      socketRef.current.send(JSON.stringify({ ...messageData })); // Send message data to server
+      socketRef.current.send(JSON.stringify(NEW_MESSAGE)); // Send message data to server
 
-      saveMessageToFirestore(messageData);
+      saveMessageToFirestore(NEW_MESSAGE);
 
       setMessage("");
 
-      // Stop typing indicator when the message is sent
-      socketRef.current.send(
-        JSON.stringify({ type: "stop_typing", user: username })
-      );
-      isTyping.current = false;
+      stopTyping();
     }
+  };
+
+  const stopTyping = () => {
+    const STOP_MESSAGE: IMessageData = {
+      type: "stop_typing",
+      username: currentUser?.userName ?? "",
+    };
+    socketRef.current?.send(JSON.stringify(STOP_MESSAGE));
+    isTyping.current = false;
   };
 
   const handleTyping = () => {
     if (!isTyping.current && socketRef.current) {
-      socketRef.current.send(
-        JSON.stringify({ type: "typing", user: username })
-      );
+      const TYPING_MESSAGE: IMessageData = {
+        type: "typing",
+        username: currentUser?.userName ?? "",
+      };
+      socketRef.current.send(JSON.stringify(TYPING_MESSAGE));
       isTyping.current = true;
     }
 
@@ -192,12 +250,35 @@ export default function Chat() {
     }
 
     // Stop typing after 2 seconds of inactivity
-    typingTimeoutRef.current = setTimeout(() => {
-      socketRef.current?.send(
-        JSON.stringify({ type: "stop_typing", user: username })
-      );
-      isTyping.current = false;
-    }, 2000);
+    typingTimeoutRef.current = setTimeout(stopTyping, 2000);
+  };
+
+  const convertToLocalTime = (timestamp: string) => {
+    const messageDate = new Date(timestamp);
+    const today = new Date();
+
+    // Check if the message is from today
+    const isToday =
+      messageDate.getDate() === today.getDate() &&
+      messageDate.getMonth() === today.getMonth() &&
+      messageDate.getFullYear() === today.getFullYear();
+
+    if (isToday) {
+      return `Today, ${messageDate.toLocaleString("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      })}`;
+    } else {
+      return messageDate.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      });
+    }
   };
 
   if (isConnecting) {
@@ -208,8 +289,7 @@ export default function Chat() {
       </div>
     );
   }
-  console.log(hasConnectionError);
-  // If the server connection failed, show a "Server Disconnected" message
+
   if (hasConnectionError) {
     return (
       <div className="server-status">
@@ -218,22 +298,11 @@ export default function Chat() {
     );
   }
 
-  if (!hasEnteredChat) {
+  if (!roomData) {
     return (
-      <div className="username-entry">
-        <h2>Enter a Username</h2>
-        <input
-          type="text"
-          placeholder="Enter your username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyUp={(e) => {
-            if (e.key === "Enter") setHasEnteredChat(true);
-          }}
-        />
-        <button onClick={() => setHasEnteredChat(true)} disabled={!username}>
-          Join Chat
-        </button>
+      <div className="connecting-container">
+        <div className="spinner"></div>
+        <p>Joining the room...</p>
       </div>
     );
   } else
@@ -244,11 +313,13 @@ export default function Chat() {
             <div
               key={index}
               className={`message ${
-                msg.user === username ? "outgoing" : "incoming"
+                msg.email === currentUser?.email ? "outgoing" : "incoming"
               }`}
             >
               <strong>
-                {msg.user === username ? `${msg.user}(me)` : msg.user}
+                {msg.email === currentUser?.email
+                  ? `${msg.username}(me)`
+                  : msg.username}
               </strong>
               : {msg.text} <br />
               <small>{msg.timestamp}</small>
