@@ -7,6 +7,7 @@ import {
   faAngleDoubleLeft,
   faAngleDoubleRight,
 } from "@fortawesome/free-solid-svg-icons";
+import { ToastContainer } from "react-toastify";
 
 export default function ChatLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -33,6 +34,7 @@ export default function ChatLayout() {
       <div className={`main-content ${isSidebarOpen ? "with-sidebar" : ""}`}>
         <Chat />
       </div>
+      <ToastContainer />
     </div>
   );
 }

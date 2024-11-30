@@ -14,7 +14,7 @@ import { db } from "../services/firebase";
 import { saveMessageToFirestore } from "../services/messageService";
 import { useAuth } from "../contexts/AuthContext";
 import { IRoomData } from "../models/IRoomData";
-import { v4 as uuidv4 } from "uuid";
+// import { v4 as uuidv4 } from "uuid";
 import { getRoom, makeRoom } from "../services/roomService";
 
 const GENERAL_ROOM_ID = "630c57bc-48ac-4873-ac43-d87715b8813a";
@@ -208,7 +208,7 @@ export default function Chat() {
   const handleSendMessage = () => {
     if (socketRef.current && message.trim() !== "") {
       const NEW_MESSAGE: IMessageData = {
-        username: currentUser?.userName ?? "",
+        username: currentUser?.username ?? "",
         text: message,
         timestamp: new Date().toISOString(),
         type: "message",
@@ -228,7 +228,7 @@ export default function Chat() {
   const stopTyping = () => {
     const STOP_MESSAGE: IMessageData = {
       type: "stop_typing",
-      username: currentUser?.userName ?? "",
+      username: currentUser?.username ?? "",
     };
     socketRef.current?.send(JSON.stringify(STOP_MESSAGE));
     isTyping.current = false;
@@ -238,7 +238,7 @@ export default function Chat() {
     if (!isTyping.current && socketRef.current) {
       const TYPING_MESSAGE: IMessageData = {
         type: "typing",
-        username: currentUser?.userName ?? "",
+        username: currentUser?.username ?? "",
       };
       socketRef.current.send(JSON.stringify(TYPING_MESSAGE));
       isTyping.current = true;

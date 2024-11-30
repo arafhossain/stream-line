@@ -14,20 +14,14 @@ import {
   UserCredential,
 } from "firebase/auth";
 import { auth } from "../services/firebase";
-import { createAndFetchUserDocument } from "../services/messageService";
+import { createAndFetchUserDocument } from "../services/userService";
+import { UserData } from "../models/IUserData";
 
 interface AuthContextType {
   currentUser: UserData | null;
   login: (email: string, password: string) => Promise<UserCredential>;
   signup: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
-}
-
-interface UserData {
-  userName: string;
-  email: string | null;
-  chatRooms: string[];
-  uid: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,20 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log(user);
-
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         const USER_DATA = await createAndFetchUserDocument(user);
 
-        console.log(USER_DATA);
-
         if (USER_DATA) {
           const CURRENT_USER: UserData = {
-            userName: USER_DATA.username,
+            username: USER_DATA.username,
             chatRooms: USER_DATA.chatRooms.slice(),
             email: user.email,
             uid: user.uid,
+            friends: USER_DATA.friends,
           };
           setCurrentUser(CURRENT_USER);
         }
@@ -77,8 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const logout = () => {
-    return signOut(auth);
+  const logout = async () => {
+    await signOut(auth);
+    setCurrentUser(null);
   };
 
   const value = { currentUser, signup, login, logout };

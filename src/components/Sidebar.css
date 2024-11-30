@@ -3,6 +3,8 @@
   background-color: #2a2a3a;
   color: white;
   padding: 20px;
+  width: 210px;
+  overflow-y: auto;
 }
 
 .sidebar h2 {
@@ -10,24 +12,132 @@
   margin-bottom: 20px;
 }
 
-.sidebar ul {
+.menu-buttons {
+  list-style-type: none;
+  padding: 0;
+  width: fit-content;
+
+  li {
+    margin-bottom: 15px;
+
+    button {
+      width: 100%;
+    }
+  }
+}
+
+/* Search Container */
+.search-container {
+  margin-top: 20px;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 5px;
+  border: 1px solid #444;
+  background-color: #3a3a4a;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.search-results {
+  list-style-type: none;
+  padding: 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.search-results li {
+  margin-bottom: 10px;
+}
+
+/* Room List */
+.room-list {
+  margin-top: 20px;
+}
+
+.room-list h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.room-list ul {
   list-style-type: none;
   padding: 0;
 }
 
-.sidebar li {
-  margin-bottom: 15px;
+.room-list li {
+  margin-bottom: 10px;
 }
 
-.sidebar button {
-  background: none;
+.room-list button {
+  background-color: #444;
   color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 14px;
   text-align: left;
 }
 
-.sidebar button:hover {
-  color: #00a9d1;
+.room-list button:hover {
+  /* background-color: #00a9d1; */
+  color: #fff;
+}
+
+.friend-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.add-friend-button {
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.friend-button {
+  background-color: transparent;
+  border: none;
+  cursor: not-allowed;
+  font-size: 14px;
+  padding: 6px 10px;
+}
+.friends-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.friends-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #444;
+  font-size: 14px;
+  color: #ddd;
+}
+
+.friends-list li:hover {
+  background-color: #3a3a4a; /* Highlight on hover */
+  cursor: pointer;
+}
+
+.friends-list li span {
+  font-weight: bold;
+  flex-grow: 1;
+  text-align: left;
+}
+
+.friends-list li .action {
+  font-size: 12px;
+  cursor: pointer;
 }

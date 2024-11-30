@@ -59,6 +59,7 @@
   padding: 10px;
   background-color: #2e2e2e; /* Dark background for input field */
   border-radius: 5px;
+  /* gap: 10px; */
 }
 
 input[type="text"] {

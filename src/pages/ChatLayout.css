@@ -28,7 +28,6 @@
 .toggle-icon {
   position: fixed;
   top: 50%;
-  left: 250px;
   z-index: 10;
   background-color: #00a9d1;
   border: none;
@@ -41,8 +40,13 @@
   margin-left: 0;
 }
 
+/* Position toggle icon based on sidebar state */
+.sidebar-container.open + .toggle-icon {
+  left: 250px; /* Position icon to the right of the sidebar when open */
+}
+
 .sidebar-container.closed + .toggle-icon {
-  left: 0px; /* Move to the edge of the screen when the sidebar is closed */
+  left: 0px; /* Position icon at the edge of the screen when closed */
 }
 
 /* Main content */

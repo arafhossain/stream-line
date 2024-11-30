@@ -8,9 +8,10 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import { useAuth } from "./contexts/AuthContext";
 import ChatLayout from "./pages/ChatLayout";
+import Profile from "./pages/Profile";
 
 function App() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
 
   return (
     <Router>
@@ -37,6 +38,11 @@ function App() {
         <Route
           path="/chat"
           element={currentUser ? <ChatLayout /> : <Navigate to="/login" />}
+        />
+
+        <Route
+          path="/profile"
+          element={currentUser ? <Profile /> : <Navigate to="/login" />}
         />
       </Routes>
     </Router>
