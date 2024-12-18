@@ -53,38 +53,18 @@
   margin-bottom: 10px;
 }
 
-/* Room List */
 .room-list {
-  margin-top: 20px;
-}
-
-.room-list h3 {
-  font-size: 18px;
-  margin-bottom: 10px;
-}
-
-.room-list ul {
   list-style-type: none;
   padding: 0;
-}
+  width: fit-content;
 
-.room-list li {
-  margin-bottom: 10px;
-}
+  li {
+    margin-bottom: 15px;
 
-.room-list button {
-  background-color: #444;
-  color: white;
-  width: 100%;
-  padding: 8px;
-  border-radius: 5px;
-  font-size: 14px;
-  text-align: left;
-}
-
-.room-list button:hover {
-  /* background-color: #00a9d1; */
-  color: #fff;
+    button {
+      width: 100%;
+    }
+  }
 }
 
 .friend-item {
@@ -140,4 +120,8 @@
 .friends-list li .action {
   font-size: 12px;
   cursor: pointer;
+}
+
+.group-rooms {
+  list-style: none;
 }

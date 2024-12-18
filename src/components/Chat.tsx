@@ -14,12 +14,13 @@ import { db } from "../services/firebase";
 import { saveMessageToFirestore } from "../services/messageService";
 import { useAuth } from "../contexts/AuthContext";
 import { IRoomData } from "../models/IRoomData";
-// import { v4 as uuidv4 } from "uuid";
-import { getRoom, makeRoom } from "../services/roomService";
+import { getRoom } from "../services/roomService";
 
-const GENERAL_ROOM_ID = "630c57bc-48ac-4873-ac43-d87715b8813a";
+interface IChatProps {
+  roomData: IRoomData | null;
+}
 
-export default function Chat() {
+const Chat: React.FC<IChatProps> = (props: IChatProps) => {
   const { currentUser } = useAuth();
 
   // Room State
@@ -119,17 +120,26 @@ export default function Chat() {
 
   useEffect(() => {
     const initializeRoom = async () => {
-      const ROOM_DATA = await getRoom(GENERAL_ROOM_ID);
+      if (props.roomData === null) {
+        const GENERAL_ROOM =
+          currentUser &&
+          Array.isArray(currentUser.chatRooms) &&
+          currentUser.chatRooms.length > 0
+            ? currentUser.chatRooms[0]
+            : "";
 
-      if (ROOM_DATA !== null) {
-        setRoomData(ROOM_DATA);
+        if (GENERAL_ROOM) {
+          const GENERAL_ROOM_DATA = await getRoom(GENERAL_ROOM);
+
+          if (GENERAL_ROOM_DATA) setRoomData(GENERAL_ROOM_DATA);
+        }
       } else {
-        await makeRoom([], "group", "General");
+        setRoomData(props.roomData);
       }
     };
 
     initializeRoom();
-  }, []);
+  }, [props.roomData]);
 
   useEffect(() => {
     if (!roomData) return;
@@ -348,4 +358,6 @@ export default function Chat() {
         </div>
       </div>
     );
-}
+};
+
+export default Chat;

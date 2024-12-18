@@ -7,23 +7,35 @@ import {
 } from "../services/friendsService";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { UserData } from "../models/IUserData";
+import { IUserData } from "../models/IUserData";
 
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { fetchAllUsers, fetchUserDocument } from "../services/userService";
+import { fetchUserDocument } from "../services/userService";
+import { fetchUserChatRooms } from "../services/roomService";
+import { IRoomData } from "../models/IRoomData";
 
-export default function Sidebar() {
+interface ISideBarProps {
+  handleDirectMessage: (
+    friendId: string,
+    currentUserId: string
+  ) => Promise<void>;
+}
+
+const Sidebar: React.FC<ISideBarProps> = (props: ISideBarProps) => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<UserData[]>([]);
+  const [searchResults, setSearchResults] = useState<IUserData[]>([]);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
 
-  const [friends, setFriends] = useState<any[]>([]);
+  const [friends, setFriends] = useState<IUserData[]>([]);
   const [showFriends, setShowFriends] = useState<boolean>(false);
+
+  const [userRooms, setUserRooms] = useState<IRoomData[]>([]);
+  const [friendsMap, setFriendsMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -41,17 +53,40 @@ export default function Sidebar() {
     const loadFriends = async () => {
       if (currentUser?.friends && currentUser.friends.length > 0) {
         const friendsData = await fetchFriendsData(currentUser.friends);
-        console.log(friendsData);
 
         setFriends(friendsData);
       }
     };
 
     loadFriends();
-    fetchAllUsers().then((res) => {
-      console.log(res);
-    });
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser?.chatRooms?.length) return;
+
+    if (currentUser?.chatRooms?.length) {
+      fetchUserChatRooms(currentUser.chatRooms).then((rooms) => {
+        setUserRooms(rooms);
+      });
+    }
+  }, [currentUser?.chatRooms]);
+
+  useEffect(() => {
+    if (!currentUser?.friends?.length) return;
+
+    if (currentUser?.friends?.length) {
+      const friendsMapping: Record<string, string> = {};
+
+      currentUser.friends.forEach((friendUid) => {
+        const friendData = friends.find((f) => f.uid === friendUid);
+        if (friendData) {
+          friendsMapping[friendUid] = friendData.username;
+        }
+      });
+
+      setFriendsMap(friendsMapping);
+    }
+  }, [friends]);
 
   const performSearch = async (term: string) => {
     setIsLoadingResults(true);
@@ -79,10 +114,11 @@ export default function Sidebar() {
 
       const updatedUser = await fetchUserDocument(CURRENT_USER_ID);
 
-      // if (updatedUser) {
-      //   setCurrentUser({ ...currentUser, friends: updatedUser.friends });
-      // }
-      console.log(updatedUser);
+      if (updatedUser) {
+        const friendsData = await fetchFriendsData(updatedUser.friends);
+
+        setFriends(friendsData);
+      }
 
       toast.success("Friend added successfully!", {
         position: "bottom-right",
@@ -106,7 +142,18 @@ export default function Sidebar() {
     }
   };
 
-  console.log(friends);
+  const renderDirectRoomName = (participants: string[]) => {
+    // Exclude current user
+    const otherParticipant = participants.filter(
+      (id) => id !== currentUser?.uid
+    );
+
+    if (!otherParticipant || otherParticipant.length === 0) return "N/A";
+
+    const FRIEND = otherParticipant[0];
+
+    return friendsMap[FRIEND];
+  };
 
   return (
     <div className="sidebar">
@@ -151,8 +198,10 @@ export default function Sidebar() {
           )}
           {!isLoadingResults && (
             <ul className="search-results">
-              {searchResults.map((user: UserData, index: number) => {
-                const isFriend = currentUser?.friends.includes(user.uid);
+              {searchResults.map((user: IUserData, index: number) => {
+                const isFriend = friends.some(
+                  (friendData) => friendData.uid === user.uid
+                );
 
                 return (
                   <li key={index} className="friend-item">
@@ -180,24 +229,47 @@ export default function Sidebar() {
           {friends.map((friend) => (
             <li key={friend.uid}>
               <span>{friend.username}</span>
-              <button className="action">Chat</button>
+              <button
+                className="action"
+                onClick={() => {
+                  if (currentUser)
+                    props.handleDirectMessage(friend.uid, currentUser?.uid);
+                }}
+              >
+                Chat
+              </button>
             </li>
           ))}
         </ul>
       )}
 
-      <div className="room-list">
-        <h3>Your Rooms</h3>
-        {/* <ul>
-          {rooms.map((room: any, index:number) => (
-            <li key={index}>
-              <button onClick={() => {}}>
-                {room.name}
-              </button>
-            </li>
-          ))}
-        </ul> */}
+      <div>
+        <h3>Groups</h3>
+        <ul className="room-list">
+          {userRooms
+            .filter((room) => room.type === "group")
+            .map((room) => (
+              <li key={room.roomId}>
+                <button>{room.groupName}</button>
+              </li>
+            ))}
+        </ul>
+      </div>
+
+      <div>
+        <h3>Direct Messages</h3>
+        <ul className="room-list">
+          {userRooms
+            .filter((room) => room.type === "direct")
+            .map((room) => (
+              <li key={room.roomId}>
+                <button>{renderDirectRoomName(room.participants)}</button>
+              </li>
+            ))}
+        </ul>
       </div>
     </div>
   );
-}
+};
+
+export default Sidebar;

@@ -1,6 +1,16 @@
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "./firebase";
 import { User } from "firebase/auth";
+import { IUserData } from "../models/IUserData";
+import { GENERAL_ROOM_ID } from "./roomService";
 
 const generateRandomDisplayName = () => {
   const adjectives = [
@@ -40,8 +50,9 @@ export const createAndFetchUserDocument = async (user: User) => {
       const USER_DATA = {
         username: generateRandomDisplayName(),
         email: user.email,
-        chatRooms: [],
+        chatRooms: [GENERAL_ROOM_ID],
         friends: [],
+        createdAt: serverTimestamp(),
       };
       await setDoc(userRef, USER_DATA, { merge: true });
       console.debug("User document created");
@@ -80,5 +91,18 @@ export const fetchAllUsers = async () => {
   } catch (err) {
     console.error("Error fetching users:", err);
     return [];
+  }
+};
+
+export const updateUserDocument = async (
+  uid: string,
+  data: Partial<IUserData>
+) => {
+  const userRef = doc(db, "users", uid);
+  try {
+    await updateDoc(userRef, data);
+  } catch (err) {
+    console.error("Error updating user document:", err);
+    throw err;
   }
 };

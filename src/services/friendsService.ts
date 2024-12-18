@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "./firebase";
+import { IUserData } from "../models/IUserData";
 
 export const searchFriends = async (searchTerm: string): Promise<any[]> => {
   try {
@@ -87,7 +88,7 @@ export const fetchFriendsData = async (friendsUIDs: string[]) => {
       })
     );
 
-    return results.flat();
+    return results.flat() as IUserData[];
   } catch (err) {
     console.error("Error fetching friends data: ", err);
     return [];

@@ -8,19 +8,41 @@ import {
   faAngleDoubleRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { ToastContainer } from "react-toastify";
+import { getRoom, makeRoom } from "../services/roomService";
+import { IRoomData } from "../models/IRoomData";
 
 export default function ChatLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [roomData, setRoomData] = useState<IRoomData | null>(null);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleDirectMessage = async (
+    friendId: string,
+    currentUserId: string
+  ) => {
+    const roomId = [currentUserId, friendId].sort().join("_");
+
+    try {
+      const existingRoom = await getRoom(roomId);
+      if (!existingRoom) {
+        const newRoom = await makeRoom([currentUserId, friendId], "direct");
+        setRoomData(newRoom);
+      } else {
+        setRoomData(existingRoom);
+      }
+    } catch (error) {
+      console.error("Error handling direct message:", error);
+    }
   };
 
   return (
     <div className="chat-layout">
       {/* Sidebar */}
       <div className={`sidebar-container ${isSidebarOpen ? "open" : "closed"}`}>
-        <Sidebar />
+        <Sidebar handleDirectMessage={handleDirectMessage} />
       </div>
 
       {/* Expand/Collapse Icon */}
@@ -32,7 +54,7 @@ export default function ChatLayout() {
 
       {/* Main content */}
       <div className={`main-content ${isSidebarOpen ? "with-sidebar" : ""}`}>
-        <Chat />
+        <Chat roomData={roomData} />
       </div>
       <ToastContainer />
     </div>
