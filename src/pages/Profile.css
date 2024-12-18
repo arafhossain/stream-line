@@ -1,57 +1,103 @@
 .profile-page {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
   background-color: #2a2a3a;
   color: white;
-  border-radius: 8px;
+}
+
+.profile-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
+  background-color: #333;
+  border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-.profile-page h1 {
-  font-size: 24px;
+.profile-container h2 {
+  text-align: center;
   margin-bottom: 20px;
 }
 
-.profile-details,
-.profile-picture {
-  margin-bottom: 20px;
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.profile-details label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 16px;
+.profile-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.profile-details input {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
+.profile-field label {
+  font-weight: bold;
+  flex: 1;
+}
+
+.profile-field span {
+  flex: 2;
+  text-align: right;
+}
+
+.username-input {
+  display: flex;
+  gap: 10px;
+  flex: 2;
+}
+
+.username-input input {
+  flex: 1;
+  padding: 5px;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  border: 1px solid #444;
-  background-color: #3a3a4a;
-  color: white;
 }
 
-.profile-details button {
+.username-input button {
+  padding: 5px 10px;
   background-color: #00a9d1;
   color: white;
-  padding: 8px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.profile-details button:disabled {
+.username-input button:disabled {
   background-color: #555;
   cursor: not-allowed;
 }
 
-.profile-picture img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 10px;
+.username-input button:hover:not(:disabled) {
+  background-color: #007ca1;
+}
+
+.save-message {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #00a9d1;
+}
+
+.profile-actions {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.back-to-chat-btn {
+  padding: 10px 20px;
+  background-color: #00a9d1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.back-to-chat-btn:hover {
+  background-color: #007ca1;
 }
