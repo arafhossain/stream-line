@@ -1,11 +1,8 @@
-/* Layout container */
-.chat-layout {
+.chat-container {
   display: flex;
   height: 100vh;
   position: relative;
 }
-
-/* Sidebar container */
 .sidebar-container {
   position: fixed;
   top: 0;
@@ -16,15 +13,12 @@
   transition: transform 0.3s ease;
   transform: translateX(-100%);
 }
-
 .sidebar-container.open {
-  transform: translateX(0); /* Slide in when open */
+  transform: translateX(0);
 }
-
 .sidebar-container.closed {
-  transform: translateX(-100%); /* Slide out when closed */
+  transform: translateX(-100%);
 }
-
 .toggle-icon {
   position: fixed;
   top: 50%;
@@ -39,26 +33,29 @@
   transition: left 0.3s ease;
   margin-left: 0;
 }
-
-/* Position toggle icon based on sidebar state */
+.unread-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  height: 8px;
+  width: 8px;
+  background-color: #ff9500;
+  border-radius: 50%;
+  display: inline-block;
+}
 .sidebar-container.open + .toggle-icon {
-  left: 250px; /* Position icon to the right of the sidebar when open */
+  left: 250px;
 }
-
 .sidebar-container.closed + .toggle-icon {
-  left: 0px; /* Position icon at the edge of the screen when closed */
+  left: 0px;
 }
-
-/* Main content */
 .main-content {
   flex-grow: 1;
   padding: 20px;
   background-color: #333;
   transition: margin-left 0.3s ease;
-  /* height: 100%; */
   overflow: hidden;
 }
-
 .main-content.with-sidebar {
-  margin-left: 250px; /* Shift content when sidebar is open */
+  margin-left: 250px;
 }

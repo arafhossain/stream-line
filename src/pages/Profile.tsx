@@ -31,7 +31,7 @@ export default function Profile() {
     }
     setIsSaving(true);
     try {
-      await updateUserDocument(currentUser?.uid, { username });
+      await updateUserDocument(currentUser?.userId ?? "", { username });
       await refreshUserData();
       setSaveMessage(
         "Success! Username updates will be reflected after re-login."
@@ -83,7 +83,9 @@ export default function Profile() {
           <div className="profile-field">
             <label>Joined:</label>
             <span>
-              {currentUser ? formatDate(currentUser.createdAt) : "N/A"}
+              {currentUser
+                ? formatDate(currentUser.createdAt as Timestamp)
+                : "N/A"}
             </span>
           </div>
           <div className="profile-field">

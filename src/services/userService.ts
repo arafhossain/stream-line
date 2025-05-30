@@ -10,7 +10,7 @@ import {
 import { db } from "./firebase";
 import { User } from "firebase/auth";
 import { IUserData } from "../models/IUserData";
-import { GENERAL_ROOM_ID } from "./roomService";
+import { DEFAULT_FRIEND_ID, GENERAL_ROOM_ID } from "../helpers/Defaults";
 
 const generateRandomDisplayName = () => {
   const adjectives = [
@@ -40,26 +40,32 @@ const generateRandomDisplayName = () => {
   return `${randomAdjective}${randomNoun}${randomNumber}`;
 };
 
-export const createAndFetchUserDocument = async (user: User) => {
+export const createAndFetchUserDocument = async (
+  user: User
+): Promise<IUserData | null> => {
   const userRef = doc(db, "users", user.uid);
 
   try {
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
-      const USER_DATA = {
+      const USER_DATA: IUserData = {
         username: generateRandomDisplayName(),
         email: user.email,
         chatRooms: [GENERAL_ROOM_ID],
-        friends: [],
+        friends: [DEFAULT_FRIEND_ID],
         createdAt: serverTimestamp(),
+        lastOpenedChatRoom: GENERAL_ROOM_ID,
+        unreadMessages: {},
+        lastSeen: serverTimestamp(),
+        seenWelcome: false,
       };
       await setDoc(userRef, USER_DATA, { merge: true });
       console.debug("User document created");
       return USER_DATA;
     } else {
       console.debug("User document already exists.");
-      return userDoc.data();
+      return userDoc.data() as IUserData;
     }
   } catch (error) {
     console.error("Error creating user in Firestore: ", error);
@@ -67,10 +73,12 @@ export const createAndFetchUserDocument = async (user: User) => {
   }
 };
 
-export const fetchUserDocument = async (uid: string) => {
+export const fetchUserDocument = async (
+  uid: string
+): Promise<IUserData | null> => {
   try {
     const userDoc = await getDoc(doc(db, "users", uid));
-    return userDoc.exists() ? userDoc.data() : null;
+    return userDoc.exists() ? (userDoc.data() as IUserData) : null;
   } catch (error) {
     console.error("Error fetching user document: ", error);
     return null;
@@ -98,6 +106,7 @@ export const updateUserDocument = async (
   uid: string,
   data: Partial<IUserData>
 ) => {
+  if (!uid) return;
   const userRef = doc(db, "users", uid);
   try {
     await updateDoc(userRef, data);

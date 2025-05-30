@@ -26,11 +26,6 @@
   }
 }
 
-/* Search Container */
-.search-container {
-  margin-top: 20px;
-}
-
 .search-container input {
   width: 100%;
   padding: 8px;
@@ -61,10 +56,33 @@
   li {
     margin-bottom: 15px;
 
-    button {
+    .chat-room-button {
       width: 100%;
     }
   }
+}
+
+.room-name-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inline-delete-btn {
+  width: inherit;
+  background-color: transparent;
+  border: none;
+  color: #888;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.inline-delete-btn:hover {
+  background-color: #440000;
+  color: #ff4d4d;
 }
 
 .friend-item {
@@ -124,4 +142,32 @@
 
 .group-rooms {
   list-style: none;
+}
+
+.chat-room-button {
+  display: flex;
+  justify-content: space-between; /* Pushes items apart */
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.room-name {
+  flex-grow: 1; /* Allows the name to take available space */
+  text-align: left;
+}
+
+.badge {
+  background-color: #ff9500; /* Muted orange */
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
 }

@@ -6,6 +6,7 @@ import "./Login.css";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null); // State to handle the error message
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function Login() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    setIsLoading(true);
     e.preventDefault();
     try {
       await login(email, password);
@@ -36,6 +38,7 @@ export default function Login() {
         setError("An unknown error occurred. Please try again.");
       }
     }
+    setIsLoading(false);
   };
 
   const navigateToSignUp = async (e: React.FormEvent) => {
@@ -46,20 +49,36 @@ export default function Login() {
     <div className="login-container">
       <form onSubmit={handleSubmit}>
         <h2>Login</h2>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          required
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-        />
+        {loading && (
+          <div className="spinner-container">
+            <div className="spinner"></div>
+          </div>
+        )}
+        {!loading && (
+          <div className="inputs-container">
+            <input
+              style={{ marginBottom: "15px" }}
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
+              placeholder="Email"
+              required
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
+              placeholder="Password"
+              required
+            />
+          </div>
+        )}
         {error && <p className="error-message">{error}</p>}
         <button type="submit">Login</button>
         <button type="button" onClick={navigateToSignUp}>

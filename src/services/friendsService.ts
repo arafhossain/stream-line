@@ -26,12 +26,12 @@ export const searchFriends = async (searchTerm: string): Promise<any[]> => {
 
     // Map the results into an array
     const usernameResults = usernameSnapshot.docs.map((doc) => ({
-      uid: doc.id,
+      userId: doc.id,
       ...doc.data(),
     }));
 
     const emailResults = emailSnapshot.docs.map((doc) => ({
-      uid: doc.id,
+      userId: doc.id,
       ...doc.data(),
     }));
 
@@ -39,7 +39,7 @@ export const searchFriends = async (searchTerm: string): Promise<any[]> => {
     const allResults = [...usernameResults, ...emailResults];
 
     const uniqueResults = Array.from(
-      new Map(allResults.map((item) => [item.uid, item])).values()
+      new Map(allResults.map((item) => [item.userId, item])).values()
     );
 
     return uniqueResults;
@@ -82,7 +82,7 @@ export const fetchFriendsData = async (friendsUIDs: string[]) => {
         const querySnapshot = await getDocs(q);
 
         return querySnapshot.docs.map((doc) => ({
-          uid: doc.id,
+          userId: doc.id,
           ...doc.data(),
         }));
       })

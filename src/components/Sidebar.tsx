@@ -1,101 +1,71 @@
 import React, { useEffect, useState } from "react";
 import "./Sidebar.css";
-import {
-  addFriend,
-  fetchFriendsData,
-  searchFriends,
-} from "../services/friendsService";
+import { searchFriends } from "../services/friendsService";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { IUserData } from "../models/IUserData";
 
-import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { fetchUserDocument } from "../services/userService";
-import { fetchUserChatRooms } from "../services/roomService";
 import { IRoomData } from "../models/IRoomData";
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 interface ISideBarProps {
   handleDirectMessage: (
     friendId: string,
     currentUserId: string
   ) => Promise<void>;
+  handleRoomSelect: (roomId: string) => Promise<void>;
+  friends: IUserData[];
+  userRooms: IRoomData[];
+  friendsMap: Record<string, string>;
+  contactsMap: Record<string, string>;
+  unreadMessages: Record<string, number>;
+  roomData: IRoomData | null;
+  fetchingRoomData: boolean;
+  setIsGroupChatModalOpen: () => void;
+  setdeleteGroupModalOpen: (
+    groupName: string,
+    roomId: string,
+    participants: string[]
+  ) => void;
+  setSearchFriendsModalOpen: () => void;
+  newRooms: string[];
+  setLeaveGroupModalOpen: (groupName: string, roomId: string) => void;
 }
+
+export const formatLastSeen = (timestamp: Timestamp | FieldValue | null) => {
+  if (!timestamp) return "Never";
+
+  if (timestamp instanceof Timestamp) {
+    const now = new Date();
+
+    const lastSeenDate = timestamp.toDate();
+
+    // If the year is the same as the current year, only show Month and Day
+    if (lastSeenDate.getFullYear() === now.getFullYear()) {
+      return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+      }).format(lastSeenDate);
+    }
+
+    // Otherwise, include the year
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(lastSeenDate);
+  }
+
+  return "Updating...";
+};
 
 const Sidebar: React.FC<ISideBarProps> = (props: ISideBarProps) => {
   const { currentUser, logout } = useAuth();
+  const { unreadMessages, friends, handleDirectMessage, newRooms } = props;
   const navigate = useNavigate();
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<IUserData[]>([]);
-  const [isLoadingResults, setIsLoadingResults] = useState(false);
-
-  const [friends, setFriends] = useState<IUserData[]>([]);
   const [showFriends, setShowFriends] = useState<boolean>(false);
-
-  const [userRooms, setUserRooms] = useState<IRoomData[]>([]);
-  const [friendsMap, setFriendsMap] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (searchQuery.trim()) {
-        performSearch(searchQuery);
-      } else {
-        setSearchResults([]);
-      }
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const loadFriends = async () => {
-      if (currentUser?.friends && currentUser.friends.length > 0) {
-        const friendsData = await fetchFriendsData(currentUser.friends);
-
-        setFriends(friendsData);
-      }
-    };
-
-    loadFriends();
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (!currentUser?.chatRooms?.length) return;
-
-    if (currentUser?.chatRooms?.length) {
-      fetchUserChatRooms(currentUser.chatRooms).then((rooms) => {
-        setUserRooms(rooms);
-      });
-    }
-  }, [currentUser?.chatRooms]);
-
-  useEffect(() => {
-    if (!currentUser?.friends?.length) return;
-
-    if (currentUser?.friends?.length) {
-      const friendsMapping: Record<string, string> = {};
-
-      currentUser.friends.forEach((friendUid) => {
-        const friendData = friends.find((f) => f.uid === friendUid);
-        if (friendData) {
-          friendsMapping[friendUid] = friendData.username;
-        }
-      });
-
-      setFriendsMap(friendsMapping);
-    }
-  }, [friends]);
-
-  const performSearch = async (term: string) => {
-    setIsLoadingResults(true);
-
-    const results = await searchFriends(term);
-
-    setSearchResults(results);
-    setIsLoadingResults(false);
-  };
 
   const handleLogout = async () => {
     try {
@@ -106,58 +76,33 @@ const Sidebar: React.FC<ISideBarProps> = (props: ISideBarProps) => {
     }
   };
 
-  const handleAddFriend = async (friendId: string) => {
-    try {
-      const CURRENT_USER_ID = currentUser?.uid ?? "";
-
-      await addFriend(CURRENT_USER_ID, friendId);
-
-      const updatedUser = await fetchUserDocument(CURRENT_USER_ID);
-
-      if (updatedUser) {
-        const friendsData = await fetchFriendsData(updatedUser.friends);
-
-        setFriends(friendsData);
-      }
-
-      toast.success("Friend added successfully!", {
-        position: "bottom-right",
-        autoClose: 3000,
-        style: {
-          backgroundColor: "#2a2a3a",
-          color: "#00a9d1",
-          border: "1px solid #00a9d1",
-        },
-      });
-    } catch (err) {
-      toast.error("Failed to add friend. Please try again.", {
-        position: "bottom-right",
-        autoClose: 3000,
-        style: {
-          backgroundColor: "#2a2a3a",
-          color: "#ff5555",
-          border: "1px solid #ff5555",
-        },
-      });
-    }
-  };
-
-  const renderDirectRoomName = (participants: string[]) => {
+  const getDirectMessageParticipant = (
+    participants: string[]
+  ): string | null => {
     // Exclude current user
     const otherParticipant = participants.filter(
-      (id) => id !== currentUser?.uid
+      (id) => id !== currentUser?.userId
     );
 
-    if (!otherParticipant || otherParticipant.length === 0) return "N/A";
+    if (!otherParticipant || otherParticipant.length === 0) return null;
 
     const FRIEND = otherParticipant[0];
 
-    return friendsMap[FRIEND];
+    const NAME = props.friendsMap[FRIEND];
+    if (NAME) {
+      return NAME;
+    }
+
+    const CONTACT_NAME = props.contactsMap[FRIEND];
+    if (CONTACT_NAME) {
+      return CONTACT_NAME;
+    }
+
+    return null;
   };
 
   return (
     <div className="sidebar">
-      <h2>Menu</h2>
       <ul className="menu-buttons">
         <li>
           <button onClick={() => navigate("/profile")}>Profile</button>
@@ -168,12 +113,14 @@ const Sidebar: React.FC<ISideBarProps> = (props: ISideBarProps) => {
           </button>
         </li>
         <li>
-          <button onClick={() => setIsSearchOpen(!isSearchOpen)}>
-            {isSearchOpen ? "Close Search" : "Search for Friends"}
+          <button onClick={() => props.setSearchFriendsModalOpen()}>
+            Search for Friends
           </button>
         </li>
         <li>
-          <button>New Group Chat</button>
+          <button onClick={() => props.setIsGroupChatModalOpen()}>
+            New Group Chat
+          </button>
         </li>
         <li>
           <button>Settings</button>
@@ -183,89 +130,136 @@ const Sidebar: React.FC<ISideBarProps> = (props: ISideBarProps) => {
         </li>
       </ul>
 
-      {isSearchOpen && (
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Search by username or email"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-            }}
-          />
-          {isLoadingResults && (
-            <div className="spinner" style={{ margin: "auto" }}></div>
-          )}
-          {!isLoadingResults && (
-            <ul className="search-results">
-              {searchResults.map((user: IUserData, index: number) => {
-                const isFriend = friends.some(
-                  (friendData) => friendData.uid === user.uid
-                );
-
-                return (
-                  <li key={index} className="friend-item">
-                    <span>{user.username}</span>
-                    <button
-                      disabled={isFriend}
-                      onClick={() => !isFriend && handleAddFriend(user.uid)}
-                      className={
-                        isFriend ? "friend-button" : "add-friend-button"
-                      }
-                    >
-                      {isFriend ? "✔" : "+"} {/* Checkmark or plus sign */}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      )}
-
       {showFriends && friends.length === 0 && <div>You have no friends...</div>}
       {showFriends && friends.length > 0 && (
         <ul className="friends-list">
-          {friends.map((friend) => (
-            <li key={friend.uid}>
-              <span>{friend.username}</span>
-              <button
-                className="action"
-                onClick={() => {
-                  if (currentUser)
-                    props.handleDirectMessage(friend.uid, currentUser?.uid);
-                }}
-              >
-                Chat
-              </button>
-            </li>
-          ))}
+          {friends.map((friend) => {
+            return (
+              <li key={friend.userId}>
+                <div>
+                  <span>{friend.username}</span>
+                  <br />
+                  <span style={{ fontSize: "10px" }}>
+                    Last seen: {formatLastSeen(friend.lastSeen)}
+                  </span>
+                </div>
+                <button
+                  className="action"
+                  onClick={() => {
+                    if (currentUser)
+                      handleDirectMessage(
+                        friend.userId ?? "",
+                        currentUser?.userId ?? ""
+                      );
+                  }}
+                >
+                  Chat
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
       <div>
         <h3>Groups</h3>
         <ul className="room-list">
-          {userRooms
+          {props.userRooms
             .filter((room) => room.type === "group")
-            .map((room) => (
-              <li key={room.roomId}>
-                <button>{room.groupName}</button>
-              </li>
-            ))}
+            .map((room) => {
+              const unreadCount = unreadMessages?.[room.roomId] || 0;
+              const isAdmin = room.adminId === currentUser?.userId;
+              return (
+                <li key={room.roomId}>
+                  <div className="room-name-wrapper">
+                    <button
+                      onClick={() => {
+                        if (
+                          !props.fetchingRoomData &&
+                          props.roomData?.roomId !== room.roomId
+                        )
+                          props.handleRoomSelect(room.roomId);
+                      }}
+                      className="chat-room-button"
+                    >
+                      <span className="room-name">{room.groupName}</span>
+                      {unreadCount > 0 && (
+                        <span className="badge">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {isAdmin && (
+                      <button
+                        className="inline-delete-btn"
+                        onClick={() => {
+                          if (room.groupName)
+                            props.setdeleteGroupModalOpen(
+                              room.groupName,
+                              room.roomId,
+                              room.participants
+                            );
+                        }}
+                      >
+                        x
+                      </button>
+                    )}
+
+                    {!isAdmin && room.groupName !== "The Pit" && (
+                      <button
+                        className="inline-delete-btn"
+                        onClick={() => {
+                          console.log("Selected room to leave: ", room);
+                          if (room.groupName)
+                            props.setLeaveGroupModalOpen(
+                              room.groupName,
+                              room.roomId
+                            );
+                        }}
+                        aria-description="exit"
+                      >
+                        ↩️
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
         </ul>
       </div>
 
       <div>
         <h3>Direct Messages</h3>
         <ul className="room-list">
-          {userRooms
+          {props.userRooms
             .filter((room) => room.type === "direct")
-            .map((room) => (
-              <li key={room.roomId}>
-                <button>{renderDirectRoomName(room.participants)}</button>
-              </li>
-            ))}
+            .map((room) => {
+              const unreadCount = unreadMessages?.[room.roomId] || 0;
+              return (
+                <li key={room.roomId}>
+                  <button
+                    onClick={() => {
+                      if (
+                        !props.fetchingRoomData &&
+                        props.roomData?.roomId !== room.roomId
+                      )
+                        props.handleRoomSelect(room.roomId);
+                    }}
+                    className="chat-room-button"
+                  >
+                    <span className="room-name">
+                      {getDirectMessageParticipant(room.participants)}
+                    </span>
+                    {unreadCount > 0 && (
+                      <span className="badge">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
         </ul>
       </div>
     </div>

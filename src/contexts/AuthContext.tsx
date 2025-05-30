@@ -13,9 +13,10 @@ import {
   User,
   UserCredential,
 } from "firebase/auth";
-import { auth } from "../services/firebase";
+import { auth, db } from "../services/firebase";
 import { createAndFetchUserDocument } from "../services/userService";
 import { IUserData } from "../models/IUserData";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 
 interface AuthContextType {
   currentUser: IUserData | null;
@@ -46,12 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (USER_DATA) {
         const UPDATED_USER: IUserData = {
           username: USER_DATA.username,
+          userId: auth.currentUser.uid,
           chatRooms: USER_DATA.chatRooms.slice(),
           email: auth.currentUser.email,
-          uid: auth.currentUser.uid,
           friends: USER_DATA.friends,
           createdAt: USER_DATA.createdAt,
+          lastOpenedChatRoom: USER_DATA.lastOpenedChatRoom,
+          lastSeen: serverTimestamp(),
+          unreadMessages: USER_DATA.unreadMessages || {},
+          seenWelcome: USER_DATA.seenWelcome,
         };
+
+        console.log("User data updated to: ", UPDATED_USER);
         setCurrentUser(UPDATED_USER);
       }
     }
@@ -67,9 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: USER_DATA.username,
             chatRooms: USER_DATA.chatRooms.slice(),
             email: user.email,
-            uid: user.uid,
+            userId: user.uid,
             friends: USER_DATA.friends,
             createdAt: USER_DATA.createdAt,
+            lastOpenedChatRoom: USER_DATA.lastOpenedChatRoom,
+            lastSeen: serverTimestamp(),
+            unreadMessages: USER_DATA.unreadMessages || {},
+            seenWelcome: USER_DATA.seenWelcome,
           };
           setCurrentUser(CURRENT_USER);
         }
@@ -89,6 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    if (currentUser?.userId) {
+      const userRef = doc(db, "users", currentUser.userId);
+      await updateDoc(userRef, {
+        lastSeen: serverTimestamp(),
+      });
+    }
+
     await signOut(auth);
     setCurrentUser(null);
   };

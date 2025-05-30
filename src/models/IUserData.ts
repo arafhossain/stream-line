@@ -1,10 +1,14 @@
-import { Timestamp } from "firebase/firestore";
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 export interface IUserData {
+  userId?: string;
   username: string;
   email: string | null;
   chatRooms: string[];
-  uid: string;
   friends: string[];
-  createdAt: Timestamp;
+  createdAt: Timestamp | FieldValue | null;
+  lastOpenedChatRoom: string;
+  lastSeen: Timestamp | FieldValue | null;
+  unreadMessages: {};
+  seenWelcome: boolean;
 }
