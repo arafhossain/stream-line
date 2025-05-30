@@ -1,46 +1,137 @@
-# Getting Started with Create React App
+# Real-Time Chat Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A real-time chat application built with TypeScript, React, Node.js, WebSockets, and Firebase. This project showcases full-stack development skills, focusing on scalable user and message state management.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🚀 Features
 
-### `npm start`
+### Authentication
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- Email/password signup & login
+- Firebase Authentication with user profile documents in Firestore
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### Chat System
 
-### `npm test`
+- **Group Chat**:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+  - Join default “General” group on signup
+  - Create & manage group chats
+  - Delete group chats (admin only)
+  - View participants of each group
 
-### `npm run build`
+- **Direct Messaging**:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+  - Initiate direct messages with friends
+  - Display chat participants in direct message view
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **Messages**:
+  - Real-time messaging via WebSockets
+  - Typing indicators
+  - Timestamps on messages
+  - Persist messages in Firestore
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Friends System
 
-### `npm run eject`
+- Search users by username or email
+- Add/remove friends
+- Friends list with last seen timestamps
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### Notifications
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- **Unread messages tracking**:
+  - Real-time updates to unread counts for each room
+  - Sidebar badges for unread message counts
+- **Unread message persistence**:
+  - Last seen timestamps used to determine unread messages
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### UI / UX
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+- Responsive sidebar with:
 
-## Learn More
+  - Profile access
+  - Friends list toggle
+  - Search for friends
+  - Create new group
+  - Logout
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- Modals for:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+  - Creating group chats
+  - Searching for friends
+  - Confirming room deletion
+
+- **Accessibility / Usability**:
+  - Welcome banner for new users
+  - Smooth transitions and polished interactions
+  - Consistent theming and color scheme
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend**:
+
+  - React (with TypeScript)
+  - React Router
+  - Context API for global state
+  - CSS Modules for styling
+
+- **Backend**:
+
+  - Node.js with WebSocket server
+  - Firebase Firestore for real-time data
+  - Firebase Authentication for user management
+
+- **Database**:
+  - Firestore collections: users, chatRooms, messages
+
+---
+
+## 🌟 Installation & Usage
+
+1. **Clone the repo**:
+
+   ```bash
+   git clone https://github.com/arafhossain/stream-line.git
+   ```
+
+2. **Install dependencies**:
+
+   ```bash
+    cd your-repo
+    npm install
+   ```
+
+3. **Start the websocket server**:
+
+   ```bash
+   cd server
+   node server.js
+   ```
+
+4. **Start the React Client**:
+
+   ```bash
+   npm start
+   ```
+
+5. **Environment Variables**:
+
+   - Configure Firebase project details in your .env file.
+
+## Future Enhancements
+
+- User presence tracking and indicators
+- More robust error handling (e.g., retrying WebSocket connections)
+- Message search or filters
+- Profile customization (e.g., status messages, profile pictures)
+- Dark mode / theming options
+
+📄 License
+
+MIT License. See LICENSE file for details.
+
+⸻
+
+Feel free to fork, improve, and share! If you found this helpful, let me know or consider contributing to future enhancements. 🚀
