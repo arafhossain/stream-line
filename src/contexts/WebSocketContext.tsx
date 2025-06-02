@@ -62,7 +62,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
         socketRef.current.close();
       }
 
-      socketRef.current = new WebSocket("ws://localhost:8080");
+      const wsUrl = process.env.REACT_APP_WEBSOCKET_URL;
+      if (!wsUrl) {
+        throw new Error("Missing WebSocket URL in env config!");
+      }
+      socketRef.current = new WebSocket(wsUrl);
 
       socketRef.current.onopen = () => {
         console.log("WebSocket connection established");
