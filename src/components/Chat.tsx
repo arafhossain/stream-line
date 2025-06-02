@@ -422,6 +422,24 @@ const Chat: React.FC<IChatProps> = (props: IChatProps) => {
     return colors[Math.abs(hash) % colors.length];
   };
 
+  const getLastSeenOfOther = (room_participants: string[]) => {
+    let ID_ARRAY = room_participants.filter((id) => id !== currentUser?.userId);
+
+    let FRIEND_ID = "";
+
+    if (Array.isArray(ID_ARRAY) && ID_ARRAY.length > 0) {
+      FRIEND_ID = ID_ARRAY[0];
+    } else return "N/A";
+
+    const FRIEND_DATA = props.friends.filter(
+      (friendData) => friendData.userId === FRIEND_ID
+    );
+
+    if (Array.isArray(FRIEND_DATA) && FRIEND_DATA.length > 0) {
+      return formatLastSeen(FRIEND_DATA[0].lastSeen);
+    } else return null;
+  };
+
   if (!isConnected) {
     return (
       <div className="connecting-container">
@@ -468,13 +486,7 @@ const Chat: React.FC<IChatProps> = (props: IChatProps) => {
                 .join(", ")}
               {roomData.type === "direct" && (
                 <div className="chat-last-seen">
-                  Last seen:{" "}
-                  {formatLastSeen(
-                    props.friends.filter(
-                      (friendData) =>
-                        friendData.userId === roomData.participants[0]
-                    )[0].lastSeen
-                  )}
+                  Last seen: {getLastSeenOfOther(roomData.participants)}
                 </div>
               )}
             </h3>
