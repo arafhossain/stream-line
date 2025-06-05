@@ -2,6 +2,8 @@
 
 A real-time chat application built with TypeScript, React, Node.js, WebSockets, and Firebase. This project showcases full-stack development skills, focusing on scalable user and message state management.
 
+This is the front-end of the project. The back-end can be found here: [Stream-Line-Backend](https://github.com/arafhossain/stream-line-backend)
+
 ---
 
 ## 🚀 Features
