@@ -422,6 +422,23 @@ const Chat: React.FC<IChatProps> = (props: IChatProps) => {
     return colors[Math.abs(hash) % colors.length];
   };
 
+  const isFriend = (room_participants: string[]): boolean => {
+    let ID_ARRAY = room_participants.filter((id) => id !== currentUser?.userId);
+
+    let FRIEND_ID = "";
+
+    if (Array.isArray(ID_ARRAY) && ID_ARRAY.length > 0) {
+      FRIEND_ID = ID_ARRAY[0];
+    } else return false;
+
+    const FRIEND_DATA = props.friends.filter(
+      (friendData) => friendData.userId === FRIEND_ID
+    );
+
+    if (Array.isArray(FRIEND_DATA) && FRIEND_DATA.length > 0) return true;
+    else return false;
+  };
+
   const getLastSeenOfOther = (room_participants: string[]) => {
     let ID_ARRAY = room_participants.filter((id) => id !== currentUser?.userId);
 
@@ -484,11 +501,13 @@ const Chat: React.FC<IChatProps> = (props: IChatProps) => {
                     "Unknown User"
                 )
                 .join(", ")}
-              {roomData.type === "direct" && (
-                <div className="chat-last-seen">
-                  Last seen: {getLastSeenOfOther(roomData.participants)}
-                </div>
-              )}
+              {roomData.type === "direct" &&
+                // Show Last Seen only for accepted friends
+                isFriend(roomData.participants) && (
+                  <div className="chat-last-seen">
+                    Last seen: {getLastSeenOfOther(roomData.participants)}
+                  </div>
+                )}
             </h3>
           )}
           {roomData?.type === "group" && roomData.participants.length > 0 && (
